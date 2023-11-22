@@ -175,12 +175,15 @@ def get_mask_head(result):
             if labels[i] == 'Face':
                 if np.sum(masks[i]) > np.sum(mask_face):
                     mask_face = masks[i]
+                    print(f'mask_face: {mask_face}')
             elif labels[i] == 'Human':
                 if np.sum(masks[i]) > np.sum(mask_human):
                     mask_human = masks[i]
+                    print(f'mask_human: {mask_human}')
             elif labels[i] == 'Hair':
                 if np.sum(masks[i]) > np.sum(mask_hair):
                     mask_hair = masks[i]
+                    print(f'mask_hair: {mask_hair}')
     mask_head = np.clip(mask_hair + mask_face, 0, 1)
     ksize = max(int(np.sqrt(np.sum(mask_face)) / 20), 1)
     kernel = np.ones((ksize, ksize))
@@ -468,7 +471,7 @@ class Blipv2():
                 cv2.imwrite(os.path.join(savedir, '{}.png'.format(cnt)), im)
                 if debug:
                     print('脸部提取图：')
-                    imgcat(im)
+                    imgcat(Image.open(os.path.join(savedir, '{}.png'.format(cnt))))
 
                 imgs_list.append('{}.png'.format(cnt))
                 img = Image.open(os.path.join(savedir, '{}.png'.format(cnt)))

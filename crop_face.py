@@ -15,6 +15,7 @@ class TestInference(unittest.TestCase):
 
     def test_inference(self):
         result = self.segmentation_pipeline('assets/user-images/asian_woman_0.jpeg')
+        print(result)
         mask_head = get_mask_head(result)
         im = cv2.imread('assets/user-images/asian_woman_0.jpeg')
         im = im * mask_head + 255 * (1 - mask_head)
