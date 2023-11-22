@@ -463,7 +463,7 @@ class Blipv2():
         fo.close()
         return out_json_name
 
-    def extract_face_info(self, imdir, imname):
+    def extract_face_info(self, imdir, imname, debug: bool = False):
         """
         从给定图片中获取脸部（加头发），以及根据脸部反推的 tag(caption)
         Input:
@@ -490,13 +490,15 @@ class Blipv2():
             img_path = os.path.join(imdir, imname)
             # 加载 cv2 格式的原图备用
             im = cv2.imread(img_path)
-            print("原图：")
-            plt.imshow(im)
+            if debug:
+                print("原图：")
+                imgcat(im)
 
             # 缩小原图到长宽均不大于1024的等比例小图，并保存为临时路径下的 tmp.png
             shrank_img = shrank_image(im)
-            print("缩小图：")
-            plt.imshow(shrank_img)
+            if debug:
+                print("缩小图：")
+                imgcat(shrank_img)
             cv2.imwrite(tmp_path, shrank_img)
 
             # 调用 face_detection 模型，返回面部检测结果
@@ -504,18 +506,21 @@ class Blipv2():
             keypoints = get_one_face_keypoints(result_det, imname)
             if keypoints is None:
                 return None, None
-            print(f"脸部keypoints：{keypoints}")
+            if debug:
+                print(f"脸部keypoints：{keypoints}")
 
             # 将脸部图智能旋转至正脸
             im = rotate(im, keypoints)
             ns = im.shape[0]
-            print("旋转图：")
-            plt.imshow(im)
+            if debug:
+                print("旋转图：")
+                imgcat(im)
 
             # 重新缩放图片为1024x1024大小
             imt = cv2.resize(im, (1024, 1024))
-            print("重新缩放图：")
-            plt.imshow(imt)
+            if debug:
+                print("重新缩放图：")
+                imgcat(imt)
 
             # 再次保存图片到临时路径下的 tmp.png
             cv2.imwrite(tmp_path, imt)
@@ -528,8 +533,9 @@ class Blipv2():
                 bbox[idx] = bbox[idx] * ns / 1024
             imr = crop_and_resize(im, bbox)
             cv2.imwrite(tmp_path, imr)
-            print("再次面部检测后缩放剪裁图：")
-            plt.imshow(imr)
+            if debug:
+                print("再次面部检测后缩放剪裁图：")
+                imgcat(imr)
 
             # 调用人像美肤模型 https://modelscope.cn/models/damo/cv_unet_skin-retouching
             result = self.skin_retouching(tmp_path)
@@ -537,17 +543,18 @@ class Blipv2():
                 print('Cannot do skin retouching, do not use this image.')
                 return None, None
             cv2.imwrite(tmp_path, result[OutputKeys.OUTPUT_IMG])
-            print("人像美肤后：")
-            plt.imshow(result[OutputKeys.OUTPUT_IMG])
+            if debug:
+                print("人像美肤后：")
+                imgcat(result[OutputKeys.OUTPUT_IMG])
 
             # 调用多人人体解析模型 https://modelscope.cn/models/damo/cv_resnet101_image-multiple-human-parsing
             result = self.segmentation_pipeline(tmp_path)
             mask_head = get_mask_head(result)
             im = cv2.imread(tmp_path)
             im = im * mask_head + 255 * (1 - mask_head)
-            print("人体解析后最终结果：")
-            plt.imshow(im)
-            # print(im.shape)
+            if debug:
+                print("人体解析后最终结果：")
+                imgcat(im)
 
             # 调用FLCM人脸关键点置信度模型 https://modelscope.cn/models/damo/cv_manual_facial-landmark-confidence_flcm
             raw_result = self.facial_landmark_confidence_func(im)
@@ -567,7 +574,8 @@ class Blipv2():
             img = Image.open(output_img_full_path)
             # 调用人物AIGC基础模型反推图片tag https://modelscope.cn/models/ly261666/cv_portrait_model/summary
             result = self.model.tag(img)
-            print(f"反推tag：{result}")
+            if debug:
+                print(f"反推tag：{result}")
 
             # 调用人脸属性识别模型FairFace推测性别和年龄 https://modelscope.cn/models/damo/cv_resnet34_face-attribute-recognition_fairface/summary
             attribute_result = self.fair_face_attribute_func(tmp_path)
@@ -575,7 +583,8 @@ class Blipv2():
             score_age = np.array(attribute_result['scores'][1])
 
             tag_g_a = parse_gender_age_tags(score_gender, score_age)
-            print(f"性别年龄tag：{tag_g_a}")
+            if debug:
+                print(f"性别年龄tag：{tag_g_a}")
             return
         except Exception as e:
             print('cathed for image process of ' + imname)
