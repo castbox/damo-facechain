@@ -475,7 +475,6 @@ class Blipv2():
             * 脸部图反推的 tag，为字符串形式，多个 tag 之间用半角逗号分隔
 
         """
-        from matplotlib import pyplot as plt
         self.model.start()
         savedir = str(imdir) + '_labeled'
         shutil.rmtree(savedir, ignore_errors=True)
@@ -538,14 +537,14 @@ class Blipv2():
                 imgcat(imr)
 
             # 调用人像美肤模型 https://modelscope.cn/models/damo/cv_unet_skin-retouching
-            result = self.skin_retouching(tmp_path)
-            if (result is None or (result[OutputKeys.OUTPUT_IMG] is None)):
-                print('Cannot do skin retouching, do not use this image.')
-                return None, None
-            cv2.imwrite(tmp_path, result[OutputKeys.OUTPUT_IMG])
-            if debug:
-                print("人像美肤后：")
-                imgcat(result[OutputKeys.OUTPUT_IMG])
+            # result = self.skin_retouching(tmp_path)
+            # if (result is None or (result[OutputKeys.OUTPUT_IMG] is None)):
+            #     print('Cannot do skin retouching, do not use this image.')
+            #     return None, None
+            # cv2.imwrite(tmp_path, result[OutputKeys.OUTPUT_IMG])
+            # if debug:
+            #     print("人像美肤后：")
+            #     imgcat(result[OutputKeys.OUTPUT_IMG])
 
             # 调用多人人体解析模型 https://modelscope.cn/models/damo/cv_resnet101_image-multiple-human-parsing
             result = self.segmentation_pipeline(tmp_path)
