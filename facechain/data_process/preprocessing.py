@@ -400,56 +400,56 @@ class Blipv2():
                 #     keypoints = result_det['keypoints'][0]
 
                 # 将脸部图智能旋转至正脸
-                im = rotate(im, keypoints)
-                ns = im.shape[0]
-                # 重新缩放图片为1024x1024大小
-                imt = cv2.resize(im, (1024, 1024))
-                # 再次保存图片到临时路径下的 tmp.png
-                cv2.imwrite(tmp_path, imt)
-                if debug:
-                    print('脸部旋转正脸图：')
-                    imgcat(Image.open(tmp_path))
-
-                # 重新做一次面部检测
-                result_det = self.face_detection(tmp_path)
-                # bboxes = result_det['boxes']
-                # if len(bboxes) > 1:
-                #     areas = []
-                #     for i in range(len(bboxes)):
-                #         bbox = bboxes[i]
-                #         areas.append((bbox[2] - bbox[0]) * (bbox[3] - bbox[1]))
-                #     areas = np.array(areas)
-                #     areas_new = np.sort(areas)[::-1]
-                #     idxs = np.argsort(areas)[::-1]
-                #     if areas_new[0] < 4 * areas_new[1]:
-                #         print('Detecting multiple faces after rotation, do not use image {}.'.format(imname))
-                #         continue
-                #     else:
-                #         bbox = bboxes[idxs[0]]
-                # elif len(bboxes) == 0:
-                #     print('Detecting no face after rotation, do not use this image {}'.format(imname))
+                # im = rotate(im, keypoints)
+                # ns = im.shape[0]
+                # # 重新缩放图片为1024x1024大小
+                # imt = cv2.resize(im, (1024, 1024))
+                # # 再次保存图片到临时路径下的 tmp.png
+                # cv2.imwrite(tmp_path, imt)
+                # if debug:
+                #     print('脸部旋转正脸图：')
+                #     imgcat(Image.open(tmp_path))
+                #
+                # # 重新做一次面部检测
+                # result_det = self.face_detection(tmp_path)
+                # # bboxes = result_det['boxes']
+                # # if len(bboxes) > 1:
+                # #     areas = []
+                # #     for i in range(len(bboxes)):
+                # #         bbox = bboxes[i]
+                # #         areas.append((bbox[2] - bbox[0]) * (bbox[3] - bbox[1]))
+                # #     areas = np.array(areas)
+                # #     areas_new = np.sort(areas)[::-1]
+                # #     idxs = np.argsort(areas)[::-1]
+                # #     if areas_new[0] < 4 * areas_new[1]:
+                # #         print('Detecting multiple faces after rotation, do not use image {}.'.format(imname))
+                # #         continue
+                # #     else:
+                # #         bbox = bboxes[idxs[0]]
+                # # elif len(bboxes) == 0:
+                # #     print('Detecting no face after rotation, do not use this image {}'.format(imname))
+                # #     continue
+                # # else:
+                # #     bbox = bboxes[0]
+                # bbox = get_one_face_box(result_det, imname)
+                #
+                # for idx in range(4):
+                #     bbox[idx] = bbox[idx] * ns / 1024
+                # imr = crop_and_resize(im, bbox)
+                # cv2.imwrite(tmp_path, imr)
+                # if debug:
+                #     print('重新做脸部检测图：')
+                #     imgcat(Image.open(tmp_path))
+                #
+                # # 做脸部美肤
+                # result = self.skin_retouching(tmp_path)
+                # if (result is None or (result[OutputKeys.OUTPUT_IMG] is None)):
+                #     print('Cannot do skin retouching, do not use this image.')
                 #     continue
-                # else:
-                #     bbox = bboxes[0]
-                bbox = get_one_face_box(result_det, imname)
-
-                for idx in range(4):
-                    bbox[idx] = bbox[idx] * ns / 1024
-                imr = crop_and_resize(im, bbox)
-                cv2.imwrite(tmp_path, imr)
-                if debug:
-                    print('重新做脸部检测图：')
-                    imgcat(Image.open(tmp_path))
-
-                # 做脸部美肤
-                result = self.skin_retouching(tmp_path)
-                if (result is None or (result[OutputKeys.OUTPUT_IMG] is None)):
-                    print('Cannot do skin retouching, do not use this image.')
-                    continue
-                cv2.imwrite(tmp_path, result[OutputKeys.OUTPUT_IMG])
-                if debug:
-                    print('脸部美肤图：')
-                    imgcat(Image.open(tmp_path))
+                # cv2.imwrite(tmp_path, result[OutputKeys.OUTPUT_IMG])
+                # if debug:
+                #     print('脸部美肤图：')
+                #     imgcat(Image.open(tmp_path))
 
                 # 做脸部特征向量提取
                 result = self.segmentation_pipeline(tmp_path)
