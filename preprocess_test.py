@@ -8,7 +8,7 @@ class TestInference(unittest.TestCase):
         self.blipv2 = Blipv2()
 
     def test_inference(self):
-        result = self.blipv2('assets/theme-images')
+        result = self.blipv2('assets/theme-images', debug=True)
         print(result)
 
 

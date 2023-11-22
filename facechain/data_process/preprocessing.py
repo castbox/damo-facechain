@@ -4,7 +4,7 @@ import json
 import math
 import os
 import shutil
-
+from imgcat import imgcat
 import cv2
 import numpy as np
 from modelscope.outputs import OutputKeys
@@ -332,7 +332,7 @@ class Blipv2():
         self.facial_landmark_confidence_func = pipeline(Tasks.face_2d_keypoints,
                                                         'damo/cv_manual_facial-landmark-confidence_flcm', model_revision='v2.5')
 
-    def __call__(self, imdir):
+    def __call__(self, imdir, debug: bool=False):
         self.model.start()
         savedir = str(imdir) + '_labeled'
         shutil.rmtree(savedir, ignore_errors=True)
@@ -361,6 +361,9 @@ class Blipv2():
 
                 # 缩小原图到长宽均不大于1024的等比例小图，并保存为临时路径下的 tmp.png
                 cv2.imwrite(tmp_path, shrank_image(im))
+                if debug:
+                    print('脸部原图：')
+                    imgcat(Image.open(tmp_path))
 
                 # 调用 face_detection 模型，返回面部检测结果
                 result_det = self.face_detection(tmp_path)
@@ -400,6 +403,9 @@ class Blipv2():
                 imt = cv2.resize(im, (1024, 1024))
                 # 再次保存图片到临时路径下的 tmp.png
                 cv2.imwrite(tmp_path, imt)
+                if debug:
+                    print('脸部旋转正脸图：')
+                    imgcat(Image.open(tmp_path))
 
                 # 重新做一次面部检测
                 result_det = self.face_detection(tmp_path)
@@ -428,13 +434,21 @@ class Blipv2():
                     bbox[idx] = bbox[idx] * ns / 1024
                 imr = crop_and_resize(im, bbox)
                 cv2.imwrite(tmp_path, imr)
+                if debug:
+                    print('重新做脸部检测图：')
+                    imgcat(Image.open(tmp_path))
 
+                # 做脸部美肤
                 result = self.skin_retouching(tmp_path)
                 if (result is None or (result[OutputKeys.OUTPUT_IMG] is None)):
                     print('Cannot do skin retouching, do not use this image.')
                     continue
                 cv2.imwrite(tmp_path, result[OutputKeys.OUTPUT_IMG])
+                if debug:
+                    print('脸部美肤图：')
+                    imgcat(Image.open(tmp_path))
 
+                # 做脸部特征向量提取
                 result = self.segmentation_pipeline(tmp_path)
                 mask_head = get_mask_head(result)
                 im = cv2.imread(tmp_path)
@@ -452,6 +466,10 @@ class Blipv2():
                     continue
 
                 cv2.imwrite(os.path.join(savedir, '{}.png'.format(cnt)), im)
+                if debug:
+                    print('脸部提取图：')
+                    imgcat(im)
+
                 imgs_list.append('{}.png'.format(cnt))
                 img = Image.open(os.path.join(savedir, '{}.png'.format(cnt)))
                 result = self.model.tag(img)
