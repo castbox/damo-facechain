@@ -355,13 +355,6 @@ class Blipv2():
                 img_path = os.path.join(imdir, imname)
                 # 加载 cv2 格式的原图备用
                 im = cv2.imread(img_path)
-                # h, w, _ = im.shape
-                # max_size = max(w, h)
-                # ratio = 1024 / max_size
-                # new_w = round(w * ratio)
-                # new_h = round(h * ratio)
-                # imt = cv2.resize(im, (new_w, new_h))
-
                 # 缩小原图到长宽均不大于1024的等比例小图，并保存为临时路径下的 tmp.png
                 cv2.imwrite(tmp_path, shrank_image(im))
                 if debug:
@@ -373,31 +366,6 @@ class Blipv2():
                 keypoints = get_one_face_keypoints(result_det, imname)
                 if keypoints is None:
                     continue
-                # bboxes = result_det['boxes']
-                # if len(bboxes) > 1:  # 检测到多个面部
-                #     # 将检测到的面部 bbox，分别计算其面积
-                #     # bbox[2] - bbox[0] 为 width
-                #     # bbox[3] - bbox[1] 为 height
-                #     # 将其乘积放入 areas 面积数组
-                #     areas = []
-                #     for i in range(len(bboxes)):
-                #         bbox = bboxes[i]
-                #         areas.append((bbox[2] - bbox[0]) * (bbox[3] - bbox[1]))
-                #     # 对 areas 面积数组进行排序，面积大的在前
-                #     areas = np.array(areas)
-                #     areas_new = np.sort(areas)[::-1]
-                #     idxs = np.argsort(areas)[::-1]
-                #     # 如果面积最大的头像 < 4倍面积第二大的头像，认为无法找到唯一的头像
-                #     if areas_new[0] < 4 * areas_new[1]:
-                #         print('Detecting multiple faces, do not use image {}.'.format(imname))
-                #         continue
-                #     else:  # 否则，认为面积最大的头像就是唯一头像，返回之
-                #         keypoints = result_det['keypoints'][idxs[0]]
-                # elif len(bboxes) == 0:  # 没有到多个面部
-                #     print('Detecting no face, do not use image {}.'.format(imname))
-                #     continue
-                # else:
-                #     keypoints = result_det['keypoints'][0]
 
                 # 将脸部图智能旋转至正脸
                 im = rotate(im, keypoints)
@@ -412,25 +380,6 @@ class Blipv2():
 
                 # 重新做一次面部检测
                 result_det = self.face_detection(tmp_path)
-                # bboxes = result_det['boxes']
-                # if len(bboxes) > 1:
-                #     areas = []
-                #     for i in range(len(bboxes)):
-                #         bbox = bboxes[i]
-                #         areas.append((bbox[2] - bbox[0]) * (bbox[3] - bbox[1]))
-                #     areas = np.array(areas)
-                #     areas_new = np.sort(areas)[::-1]
-                #     idxs = np.argsort(areas)[::-1]
-                #     if areas_new[0] < 4 * areas_new[1]:
-                #         print('Detecting multiple faces after rotation, do not use image {}.'.format(imname))
-                #         continue
-                #     else:
-                #         bbox = bboxes[idxs[0]]
-                # elif len(bboxes) == 0:
-                #     print('Detecting no face after rotation, do not use this image {}'.format(imname))
-                #     continue
-                # else:
-                #     bbox = bboxes[0]
                 bbox = get_one_face_box(result_det, imname)
 
                 for idx in range(4):
