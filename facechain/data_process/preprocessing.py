@@ -391,14 +391,14 @@ class Blipv2():
                     imgcat(Image.open(tmp_path))
 
                 # 做脸部美肤
-                result = self.skin_retouching(tmp_path)
-                if (result is None or (result[OutputKeys.OUTPUT_IMG] is None)):
-                    print('Cannot do skin retouching, do not use this image.')
-                    continue
-                cv2.imwrite(tmp_path, result[OutputKeys.OUTPUT_IMG])
-                if debug:
-                    print('脸部美肤图：')
-                    imgcat(Image.open(tmp_path))
+                # result = self.skin_retouching(tmp_path)
+                # if (result is None or (result[OutputKeys.OUTPUT_IMG] is None)):
+                #     print('Cannot do skin retouching, do not use this image.')
+                #     continue
+                # cv2.imwrite(tmp_path, result[OutputKeys.OUTPUT_IMG])
+                # if debug:
+                #     print('脸部美肤图：')
+                #     imgcat(Image.open(tmp_path))
 
                 # 做脸部特征向量提取
                 result = self.segmentation_pipeline(tmp_path)
