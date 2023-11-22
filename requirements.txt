@@ -8,12 +8,12 @@ opencv-python
 torchvision
 mmdet==2.26.0
 mmengine
-numpy==1.22.0
-protobuf==3.20.1
+numpy~=1.23.5
+protobuf~=3.20.3
 timm
-scikit-image==0.19.3
+scikit-image
 gradio
-controlnet_aux==0.0.6
+controlnet_aux
 mediapipe
 python-slugify
 edge-tts

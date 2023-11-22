@@ -199,6 +199,125 @@ def get_mask_head(result):
     return mask_head
 
 
+def shrank_image(im):
+    """ 缩小原图到长宽均不大于1024的等比例小图
+    Input:
+        * im: cv2 格式的原图
+
+    Output:
+        * cv2 格式缩小的原图
+
+    """
+    h, w, _ = im.shape
+    max_size = max(w, h)
+    ratio = 1024 / max_size
+    new_w = round(w * ratio)
+    new_h = round(h * ratio)
+    imt = cv2.resize(im, (new_w, new_h))
+    return imt
+
+
+def get_one_face_keypoints(result_det, imname):
+    """
+    从脸部识别信息中获取较大或唯一的那张脸，并返回其 keypoints
+    较大的判断标准为，最大的那一张脸比第二大的面积要大4倍
+    Input:
+        * result_det: face_detection 模型返回的脸部信息（0到多个）
+        * imname: 原图文件名，仅用于输入错误信息
+
+    Output:
+        * 如果只有一张脸，或者多张脸中间有明显较大的那张，返回该脸部的 key points，否则返回 None
+
+    """
+    bboxes = result_det['boxes']
+    if len(bboxes) > 1:  # 检测到多个面部
+        # 将检测到的面部 bbox，分别计算其面积
+        # bbox[2] - bbox[0] 为 width
+        # bbox[3] - bbox[1] 为 height
+        # 将其乘积放入 areas 面积数组
+        areas = []
+        for i in range(len(bboxes)):
+            bbox = bboxes[i]
+            areas.append((bbox[2] - bbox[0]) * (bbox[3] - bbox[1]))
+        # 对 areas 面积数组进行排序，面积大的在前
+        areas = np.array(areas)
+        areas_new = np.sort(areas)[::-1]
+        idxs = np.argsort(areas)[::-1]
+        # 如果面积最大的头像 < 4倍面积第二大的头像，认为无法找到唯一的头像
+        if areas_new[0] < 4 * areas_new[1]:
+            print('Detecting multiple faces, do not use image {}.'.format(imname))
+            return None
+        else:  # 否则，认为面积最大的头像就是唯一头像，返回之
+            return result_det['keypoints'][idxs[0]]
+    elif len(bboxes) == 0:  # 没有到多个面部
+        print('Detecting no face, do not use image {}.'.format(imname))
+        return None
+    else:
+        return result_det['keypoints'][0]
+
+
+def get_one_face_box(result_det, imname):
+    """
+    从脸部识别信息中获取较大或唯一的那张脸，并返回其 box
+    较大的判断标准为，最大的那一张脸比第二大的面积要大4倍
+    Input:
+        * result_det: face_detection 模型返回的脸部信息图（0到多个）
+        * imname: 原图文件名，仅用于输入错误信息
+
+    Output:
+        * 如果只有一张脸，或者多张脸中间有明显较大的那张，返回该脸部的 key points，否则返回 None
+
+    """
+    bboxes = result_det['boxes']
+    if len(bboxes) > 1:
+        areas = []
+        for i in range(len(bboxes)):
+            bbox = bboxes[i]
+            areas.append((bbox[2] - bbox[0]) * (bbox[3] - bbox[1]))
+        areas = np.array(areas)
+        areas_new = np.sort(areas)[::-1]
+        idxs = np.argsort(areas)[::-1]
+        if areas_new[0] < 4 * areas_new[1]:
+            print('Detecting multiple faces after rotation, do not use image {}.'.format(imname))
+            return None
+        else:
+            return bboxes[idxs[0]]
+    elif len(bboxes) == 0:
+        print('Detecting no face after rotation, do not use this image {}'.format(imname))
+        return None
+    else:
+        return bboxes[0]
+
+
+def file_name_only(filename):
+    """
+    将 filename 去掉 .后缀 只返回文件名部分
+    """
+    return os.path.splitext(filename)[0]
+
+
+def parse_gender_age_tags(score_gender, score_age):
+    # determine trigger word
+    gender = np.argmax(score_gender)
+    age = np.argmax(score_age)
+    if age < 2:
+        if gender == 0:
+            tag_a_g = ['a boy', 'children']
+        else:
+            tag_a_g = ['a girl', 'children']
+    elif age > 4:
+        if gender == 0:
+            tag_a_g = ['a mature man']
+        else:
+            tag_a_g = ['a mature woman']
+    else:
+        if gender == 0:
+            tag_a_g = ['a handsome man']
+        else:
+            tag_a_g = ['a beautiful woman']
+    return tag_a_g
+
+
 class Blipv2():
     def __init__(self):
         self.model = DeepDanbooru()
@@ -231,60 +350,79 @@ class Blipv2():
                 if imname.startswith('.'):
                     continue
                 img_path = os.path.join(imdir, imname)
+                # 加载 cv2 格式的原图备用
                 im = cv2.imread(img_path)
-                h, w, _ = im.shape
-                max_size = max(w, h)
-                ratio = 1024 / max_size
-                new_w = round(w * ratio)
-                new_h = round(h * ratio)
-                imt = cv2.resize(im, (new_w, new_h))
-                cv2.imwrite(tmp_path, imt)
-                result_det = self.face_detection(tmp_path)
-                bboxes = result_det['boxes']
-                if len(bboxes) > 1:
-                    areas = []
-                    for i in range(len(bboxes)):
-                        bbox = bboxes[i]
-                        areas.append((bbox[2] - bbox[0]) * (bbox[3] - bbox[1]))
-                    areas = np.array(areas)
-                    areas_new = np.sort(areas)[::-1]
-                    idxs = np.argsort(areas)[::-1]
-                    if areas_new[0] < 4 * areas_new[1]:
-                        print('Detecting multiple faces, do not use image {}.'.format(imname))
-                        continue
-                    else:
-                        keypoints = result_det['keypoints'][idxs[0]]
-                elif len(bboxes) == 0:
-                    print('Detecting no face, do not use image {}.'.format(imname))
-                    continue
-                else:
-                    keypoints = result_det['keypoints'][0]
+                # h, w, _ = im.shape
+                # max_size = max(w, h)
+                # ratio = 1024 / max_size
+                # new_w = round(w * ratio)
+                # new_h = round(h * ratio)
+                # imt = cv2.resize(im, (new_w, new_h))
 
+                # 缩小原图到长宽均不大于1024的等比例小图，并保存为临时路径下的 tmp.png
+                cv2.imwrite(tmp_path, shrank_image(im))
+
+                # 调用 face_detection 模型，返回面部检测结果
+                result_det = self.face_detection(tmp_path)
+                keypoints = get_one_face_keypoints(result_det, imname)
+                if keypoints is None:
+                    continue
+                # bboxes = result_det['boxes']
+                # if len(bboxes) > 1:  # 检测到多个面部
+                #     # 将检测到的面部 bbox，分别计算其面积
+                #     # bbox[2] - bbox[0] 为 width
+                #     # bbox[3] - bbox[1] 为 height
+                #     # 将其乘积放入 areas 面积数组
+                #     areas = []
+                #     for i in range(len(bboxes)):
+                #         bbox = bboxes[i]
+                #         areas.append((bbox[2] - bbox[0]) * (bbox[3] - bbox[1]))
+                #     # 对 areas 面积数组进行排序，面积大的在前
+                #     areas = np.array(areas)
+                #     areas_new = np.sort(areas)[::-1]
+                #     idxs = np.argsort(areas)[::-1]
+                #     # 如果面积最大的头像 < 4倍面积第二大的头像，认为无法找到唯一的头像
+                #     if areas_new[0] < 4 * areas_new[1]:
+                #         print('Detecting multiple faces, do not use image {}.'.format(imname))
+                #         continue
+                #     else:  # 否则，认为面积最大的头像就是唯一头像，返回之
+                #         keypoints = result_det['keypoints'][idxs[0]]
+                # elif len(bboxes) == 0:  # 没有到多个面部
+                #     print('Detecting no face, do not use image {}.'.format(imname))
+                #     continue
+                # else:
+                #     keypoints = result_det['keypoints'][0]
+
+                # 将脸部图智能旋转至正脸
                 im = rotate(im, keypoints)
                 ns = im.shape[0]
+                # 重新缩放图片为1024x1024大小
                 imt = cv2.resize(im, (1024, 1024))
+                # 再次保存图片到临时路径下的 tmp.png
                 cv2.imwrite(tmp_path, imt)
-                result_det = self.face_detection(tmp_path)
-                bboxes = result_det['boxes']
 
-                if len(bboxes) > 1:
-                    areas = []
-                    for i in range(len(bboxes)):
-                        bbox = bboxes[i]
-                        areas.append((bbox[2] - bbox[0]) * (bbox[3] - bbox[1]))
-                    areas = np.array(areas)
-                    areas_new = np.sort(areas)[::-1]
-                    idxs = np.argsort(areas)[::-1]
-                    if areas_new[0] < 4 * areas_new[1]:
-                        print('Detecting multiple faces after rotation, do not use image {}.'.format(imname))
-                        continue
-                    else:
-                        bbox = bboxes[idxs[0]]
-                elif len(bboxes) == 0:
-                    print('Detecting no face after rotation, do not use this image {}'.format(imname))
-                    continue
-                else:
-                    bbox = bboxes[0]
+                # 重新做一次面部检测
+                result_det = self.face_detection(tmp_path)
+                # bboxes = result_det['boxes']
+                # if len(bboxes) > 1:
+                #     areas = []
+                #     for i in range(len(bboxes)):
+                #         bbox = bboxes[i]
+                #         areas.append((bbox[2] - bbox[0]) * (bbox[3] - bbox[1]))
+                #     areas = np.array(areas)
+                #     areas_new = np.sort(areas)[::-1]
+                #     idxs = np.argsort(areas)[::-1]
+                #     if areas_new[0] < 4 * areas_new[1]:
+                #         print('Detecting multiple faces after rotation, do not use image {}.'.format(imname))
+                #         continue
+                #     else:
+                #         bbox = bboxes[idxs[0]]
+                # elif len(bboxes) == 0:
+                #     print('Detecting no face after rotation, do not use this image {}'.format(imname))
+                #     continue
+                # else:
+                #     bbox = bboxes[0]
+                bbox = get_one_face_box(result_det, imname)
 
                 for idx in range(4):
                     bbox[idx] = bbox[idx] * ns / 1024
@@ -354,3 +492,122 @@ class Blipv2():
             fo.write(json.dumps(info_dict) + '\n')
         fo.close()
         return out_json_name
+
+    def extract_face_info(self, imdir, imname):
+        """
+        从给定图片中获取脸部（加头发），以及根据脸部反推的 tag(caption)
+        Input:
+            * imdir: 原图所在目录
+            * imname: 原图文件名，仅用于输入错误信息
+
+        Output:
+            * 脸部图文件路径，保存文件夹为 imdir + '_labeled'，文件名为 imname去掉后缀名 + "_face.png"
+            * 脸部图反推的 tag，为字符串形式，多个 tag 之间用半角逗号分隔
+
+        """
+        from matplotlib import pyplot as plt
+        self.model.start()
+        savedir = str(imdir) + '_labeled'
+        shutil.rmtree(savedir, ignore_errors=True)
+        os.makedirs(savedir, exist_ok=True)
+
+        tmp_path = os.path.join(savedir, 'tmp.png')
+
+        try:
+            # if 1:
+            if imname.startswith('.'):
+                return None, None
+            img_path = os.path.join(imdir, imname)
+            # 加载 cv2 格式的原图备用
+            im = cv2.imread(img_path)
+            print("原图：")
+            plt.imshow(im)
+
+            # 缩小原图到长宽均不大于1024的等比例小图，并保存为临时路径下的 tmp.png
+            shrank_img = shrank_image(im)
+            print("缩小图：")
+            plt.imshow(shrank_img)
+            cv2.imwrite(tmp_path, shrank_img)
+
+            # 调用 face_detection 模型，返回面部检测结果
+            result_det = self.face_detection(tmp_path)
+            keypoints = get_one_face_keypoints(result_det, imname)
+            if keypoints is None:
+                return None, None
+            print(f"脸部keypoints：{keypoints}")
+
+            # 将脸部图智能旋转至正脸
+            im = rotate(im, keypoints)
+            ns = im.shape[0]
+            print("旋转图：")
+            plt.imshow(im)
+
+            # 重新缩放图片为1024x1024大小
+            imt = cv2.resize(im, (1024, 1024))
+            print("重新缩放图：")
+            plt.imshow(imt)
+
+            # 再次保存图片到临时路径下的 tmp.png
+            cv2.imwrite(tmp_path, imt)
+
+            # 重新做一次面部检测
+            result_det = self.face_detection(tmp_path)
+            bbox = get_one_face_box(result_det, imname)
+
+            for idx in range(4):
+                bbox[idx] = bbox[idx] * ns / 1024
+            imr = crop_and_resize(im, bbox)
+            cv2.imwrite(tmp_path, imr)
+            print("再次面部检测后缩放剪裁图：")
+            plt.imshow(imr)
+
+            # 调用人像美肤模型 https://modelscope.cn/models/damo/cv_unet_skin-retouching
+            result = self.skin_retouching(tmp_path)
+            if (result is None or (result[OutputKeys.OUTPUT_IMG] is None)):
+                print('Cannot do skin retouching, do not use this image.')
+                return None, None
+            cv2.imwrite(tmp_path, result[OutputKeys.OUTPUT_IMG])
+            print("人像美肤后：")
+            plt.imshow(result[OutputKeys.OUTPUT_IMG])
+
+            # 调用多人人体解析模型 https://modelscope.cn/models/damo/cv_resnet101_image-multiple-human-parsing
+            result = self.segmentation_pipeline(tmp_path)
+            mask_head = get_mask_head(result)
+            im = cv2.imread(tmp_path)
+            im = im * mask_head + 255 * (1 - mask_head)
+            print("人体解析后最终结果：")
+            plt.imshow(im)
+            # print(im.shape)
+
+            # 调用FLCM人脸关键点置信度模型 https://modelscope.cn/models/damo/cv_manual_facial-landmark-confidence_flcm
+            raw_result = self.facial_landmark_confidence_func(im)
+            if raw_result is None:
+                print('landmark quality fail...')
+                return None, None
+
+            print(f"{imname} 人脸置信度结果得分：{raw_result['scores'][0]}")
+            if float(raw_result['scores'][0]) < (1 - 0.145):
+                print('landmark quality fail...')
+                return None, None
+
+            output_img_file_name = file_name_only(imname) + "_face.png"
+            output_img_full_path = os.path.join(savedir, output_img_file_name)
+            cv2.imwrite(output_img_full_path, im)
+
+            img = Image.open(output_img_full_path)
+            # 调用人物AIGC基础模型反推图片tag https://modelscope.cn/models/ly261666/cv_portrait_model/summary
+            result = self.model.tag(img)
+            print(f"反推tag：{result}")
+
+            # 调用人脸属性识别模型FairFace推测性别和年龄 https://modelscope.cn/models/damo/cv_resnet34_face-attribute-recognition_fairface/summary
+            attribute_result = self.fair_face_attribute_func(tmp_path)
+            score_gender = np.array(attribute_result['scores'][0])
+            score_age = np.array(attribute_result['scores'][1])
+
+            tag_g_a = parse_gender_age_tags(score_gender, score_age)
+            print(f"性别年龄tag：{tag_g_a}")
+            return
+        except Exception as e:
+            print('cathed for image process of ' + imname)
+            print(f'Error: {e}')
+
