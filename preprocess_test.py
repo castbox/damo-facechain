@@ -15,7 +15,8 @@ class TestInference(unittest.TestCase):
         self.blipv2 = Blipv2()
 
     def test_inference(self):
-        result = self.blipv2.extract_face_info('assets/user-images', imname='black_man_0.jpeg', debug=True)
+        # result = self.blipv2.extract_face_info('assets/user-images', imname='black_man_0.jpeg', debug=True)
+        result = self.blipv2.extract_face_info('assets/user-images', imname='black_man_fused_final.png', debug=True)
         print(result)
 
         image_face_fusion = pipeline(Tasks.image_face_fusion,
@@ -23,13 +24,10 @@ class TestInference(unittest.TestCase):
         template = Image.open('assets/theme-images/black_man_fused.png')
         user_path = result
 
-        for i in range(3):
-            result = image_face_fusion(dict(template=template, user=user_path))
-            output = cv2.cvtColor(result[OutputKeys.OUTPUT_IMG], cv2.COLOR_BGR2RGB)
-            imgcat(output)
-            template = Image.fromarray(output)
+        result = image_face_fusion(dict(template=template, user=user_path))
+        output = cv2.cvtColor(result[OutputKeys.OUTPUT_IMG], cv2.COLOR_BGR2RGB)
+        imgcat(output)
 
-        imgcat(cv2.cvtColor(result[OutputKeys.OUTPUT_IMG], cv2.COLOR_BGR2RGB))
         print('finished!')
 
 
