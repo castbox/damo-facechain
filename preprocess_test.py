@@ -1,6 +1,7 @@
 import unittest
 
 import cv2
+import numpy
 from PIL import Image
 from imgcat import imgcat
 from modelscope import pipeline, Tasks
@@ -26,7 +27,7 @@ class TestInference(unittest.TestCase):
             result = image_face_fusion(dict(template=template, user=user_path))
             output = cv2.cvtColor(result[OutputKeys.OUTPUT_IMG], cv2.COLOR_BGR2RGB)
             imgcat(output)
-            template = output
+            template = numpy.copy(output)
 
         imgcat(cv2.cvtColor(result[OutputKeys.OUTPUT_IMG], cv2.COLOR_BGR2RGB))
         print('finished!')
