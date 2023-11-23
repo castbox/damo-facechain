@@ -545,6 +545,9 @@ class Blipv2():
                 imgcat(im)
 
             im = im * mask_head + 255 * (1 - mask_head)
+            if debug:
+                print("人体解析后最终结果：")
+                imgcat(im)
 
             cv2.imwrite(tmp_path, im)
 
