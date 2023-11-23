@@ -24,8 +24,9 @@ class TestInference(unittest.TestCase):
 
         for i in range(3):
             result = image_face_fusion(dict(template=template, user=user_path))
-            imgcat(cv2.cvtColor(result[OutputKeys.OUTPUT_IMG], cv2.COLOR_BGR2RGB))
-            template = result[OutputKeys.OUTPUT_IMG]
+            output = cv2.cvtColor(result[OutputKeys.OUTPUT_IMG], cv2.COLOR_BGR2RGB)
+            imgcat(output)
+            template = output
 
         imgcat(cv2.cvtColor(result[OutputKeys.OUTPUT_IMG], cv2.COLOR_BGR2RGB))
         print('finished!')
