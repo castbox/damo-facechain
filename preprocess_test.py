@@ -20,9 +20,12 @@ class TestInference(unittest.TestCase):
                                      model='damo/cv_unet-image-face-fusion_damo')
         template_path = 'assets/theme-images/black_man_fused.png'
         user_path = result
-        result = image_face_fusion(dict(template=template_path, user=user_path))
 
-        cv2.imwrite('result.png', result[OutputKeys.OUTPUT_IMG])
+        for i in range(3):
+            result = image_face_fusion(dict(template=template_path, user=user_path))
+            imgcat(cv2.cvtColor(result[OutputKeys.OUTPUT_IMG], cv2.COLOR_BGR2RGB))
+            template_path = result
+
         imgcat(cv2.cvtColor(result[OutputKeys.OUTPUT_IMG], cv2.COLOR_BGR2RGB))
         print('finished!')
 
