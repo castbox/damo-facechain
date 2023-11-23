@@ -323,17 +323,17 @@ def parse_gender_age_tags(score_gender, score_age):
 
 class Blipv2():
     def __init__(self):
-        self.model = DeepDanbooru()
-        self.skin_retouching = pipeline('skin-retouching-torch', model='damo/cv_unet_skin_retouching_torch', model_revision='v1.0.1')
+        # self.model = DeepDanbooru()
+        # self.skin_retouching = pipeline('skin-retouching-torch', model='damo/cv_unet_skin_retouching_torch', model_revision='v1.0.1')
         # ToDo: face detection
         self.face_detection = pipeline(task=Tasks.face_detection, model='damo/cv_ddsar_face-detection_iclr23-damofd', model_revision='v1.1')
         # self.mog_face_detection_func = pipeline(Tasks.face_detection, 'damo/cv_resnet101_face-detection_cvpr22papermogface')
         self.segmentation_pipeline = pipeline(Tasks.image_segmentation,
                                               'damo/cv_resnet101_image-multiple-human-parsing', model_revision='v1.0.1')
-        self.fair_face_attribute_func = pipeline(Tasks.face_attribute_recognition,
-                                                 'damo/cv_resnet34_face-attribute-recognition_fairface', model_revision='v2.0.2')
-        self.facial_landmark_confidence_func = pipeline(Tasks.face_2d_keypoints,
-                                                        'damo/cv_manual_facial-landmark-confidence_flcm', model_revision='v2.5')
+        # self.fair_face_attribute_func = pipeline(Tasks.face_attribute_recognition,
+        #                                          'damo/cv_resnet34_face-attribute-recognition_fairface', model_revision='v2.0.2')
+        # self.facial_landmark_confidence_func = pipeline(Tasks.face_2d_keypoints,
+        #                                                 'damo/cv_manual_facial-landmark-confidence_flcm', model_revision='v2.5')
 
     def __call__(self, imdir, debug: bool=False):
         self.model.start()
@@ -555,35 +555,6 @@ class Blipv2():
                 print("人体解析后最终结果：")
                 imgcat(im)
 
-            # 调用FLCM人脸关键点置信度模型 https://modelscope.cn/models/damo/cv_manual_facial-landmark-confidence_flcm
-            raw_result = self.facial_landmark_confidence_func(im)
-            if raw_result is None:
-                print('landmark quality fail...')
-                return None, None
-
-            print(f"{imname} 人脸置信度结果得分：{raw_result['scores'][0]}")
-            if float(raw_result['scores'][0]) < (1 - 0.145):
-                print('landmark quality fail...')
-                return None, None
-
-            output_img_file_name = file_name_only(imname) + "_face.png"
-            output_img_full_path = os.path.join(savedir, output_img_file_name)
-            cv2.imwrite(output_img_full_path, im)
-
-            img = Image.open(output_img_full_path)
-            # 调用人物AIGC基础模型反推图片tag https://modelscope.cn/models/ly261666/cv_portrait_model/summary
-            result = self.model.tag(img)
-            if debug:
-                print(f"反推tag：{result}")
-
-            # 调用人脸属性识别模型FairFace推测性别和年龄 https://modelscope.cn/models/damo/cv_resnet34_face-attribute-recognition_fairface/summary
-            attribute_result = self.fair_face_attribute_func(tmp_path)
-            score_gender = np.array(attribute_result['scores'][0])
-            score_age = np.array(attribute_result['scores'][1])
-
-            tag_g_a = parse_gender_age_tags(score_gender, score_age)
-            if debug:
-                print(f"性别年龄tag：{tag_g_a}")
             return
         except Exception as e:
             print('cathed for image process of ' + imname)
