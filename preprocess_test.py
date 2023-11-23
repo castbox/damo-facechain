@@ -18,7 +18,7 @@ class TestInference(unittest.TestCase):
 
         image_face_fusion = pipeline(Tasks.image_face_fusion,
                                      model='damo/cv_unet-image-face-fusion_damo')
-        template_path = 'assets/theme-images/doctor_1.png'
+        template_path = 'assets/theme-images/black_man_fused.png'
         user_path = result
         result = image_face_fusion(dict(template=template_path, user=user_path))
 
