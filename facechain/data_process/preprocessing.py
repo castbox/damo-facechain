@@ -184,7 +184,7 @@ def get_mask_head(result):
                 if np.sum(masks[i]) > np.sum(mask_hair):
                     mask_hair = masks[i]
                     print(f'mask_hair: {mask_hair}')
-    mask_head = np.clip(mask_face, 0, 1)
+    mask_head = np.clip(mask_hair + mask_face, 0, 1)
     ksize = max(int(np.sqrt(np.sum(mask_face)) / 20), 1)
     kernel = np.ones((ksize, ksize))
     mask_head = cv2.dilate(mask_head, kernel, iterations=1) * mask_human
@@ -544,7 +544,7 @@ class Blipv2():
 
             if debug:
                 print("人体解析后最终结果：")
-                imgcat(cv2.cvtColor(im, cv2.COLOR_BGR2RGB))
+                imgcat(im)
 
             return
         except Exception as e:
