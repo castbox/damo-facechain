@@ -542,9 +542,11 @@ class Blipv2():
             im = cv2.imread(tmp_path)
             im = im * mask_head + 255 * (1 - mask_head)
 
+            cv2.imwrite(tmp_path, im)
+
             if debug:
                 print("人体解析后最终结果：")
-                imgcat(im)
+                imgcat(Image.open(tmp_path))
 
             return
         except Exception as e:
