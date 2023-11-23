@@ -184,7 +184,7 @@ def get_mask_head(result):
                 if np.sum(masks[i]) > np.sum(mask_hair):
                     mask_hair = masks[i]
                     print(f'mask_hair: {mask_hair}')
-    mask_head = np.clip(mask_hair + mask_face, 0, 1)
+    mask_head = np.clip(mask_face, 0, 1)
     ksize = max(int(np.sqrt(np.sum(mask_face)) / 20), 1)
     kernel = np.ones((ksize, ksize))
     mask_head = cv2.dilate(mask_head, kernel, iterations=1) * mask_human
@@ -490,13 +490,13 @@ class Blipv2():
             im = cv2.imread(img_path)
             if debug:
                 print("原图：")
-                imgcat(im)
+                imgcat(cv2.cvtColor(im, cv2.COLOR_BGR2RGB))
 
             # 缩小原图到长宽均不大于1024的等比例小图，并保存为临时路径下的 tmp.png
             shrank_img = shrank_image(im)
             if debug:
                 print("缩小图：")
-                imgcat(shrank_img)
+                imgcat(cv2.cvtColor(shrank_img, cv2.COLOR_BGR2RGB))
             cv2.imwrite(tmp_path, shrank_img)
 
             # 调用 face_detection 模型，返回面部检测结果
@@ -512,13 +512,13 @@ class Blipv2():
             ns = im.shape[0]
             if debug:
                 print("旋转图：")
-                imgcat(im)
+                imgcat(cv2.cvtColor(im, cv2.COLOR_BGR2RGB))
 
             # 重新缩放图片为1024x1024大小
             imt = cv2.resize(im, (1024, 1024))
             if debug:
                 print("重新缩放图：")
-                imgcat(imt)
+                imgcat(cv2.cvtColor(imt, cv2.COLOR_BGR2RGB))
 
             # 再次保存图片到临时路径下的 tmp.png
             cv2.imwrite(tmp_path, imt)
@@ -527,32 +527,24 @@ class Blipv2():
             result_det = self.face_detection(tmp_path)
             bbox = get_one_face_box(result_det, imname)
 
+            # 截取脸部部分到 512x512 的方框里
             for idx in range(4):
                 bbox[idx] = bbox[idx] * ns / 1024
             imr = crop_and_resize(im, bbox)
             cv2.imwrite(tmp_path, imr)
             if debug:
                 print("再次面部检测后缩放剪裁图：")
-                imgcat(imr)
-
-            # 调用人像美肤模型 https://modelscope.cn/models/damo/cv_unet_skin-retouching
-            # result = self.skin_retouching(tmp_path)
-            # if (result is None or (result[OutputKeys.OUTPUT_IMG] is None)):
-            #     print('Cannot do skin retouching, do not use this image.')
-            #     return None, None
-            # cv2.imwrite(tmp_path, result[OutputKeys.OUTPUT_IMG])
-            # if debug:
-            #     print("人像美肤后：")
-            #     imgcat(result[OutputKeys.OUTPUT_IMG])
+                imgcat(cv2.cvtColor(imr, cv2.COLOR_BGR2RGB))
 
             # 调用多人人体解析模型 https://modelscope.cn/models/damo/cv_resnet101_image-multiple-human-parsing
             result = self.segmentation_pipeline(tmp_path)
             mask_head = get_mask_head(result)
             im = cv2.imread(tmp_path)
             im = im * mask_head + 255 * (1 - mask_head)
+
             if debug:
                 print("人体解析后最终结果：")
-                imgcat(im)
+                imgcat(cv2.cvtColor(im, cv2.COLOR_BGR2RGB))
 
             return
         except Exception as e:
