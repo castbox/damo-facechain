@@ -336,7 +336,7 @@ class Blipv2():
         #                                                 'damo/cv_manual_facial-landmark-confidence_flcm', model_revision='v2.5')
 
     def __call__(self, imdir, debug: bool=False):
-        self.model.start()
+        # self.model.start()
         savedir = str(imdir) + '_labeled'
         shutil.rmtree(savedir, ignore_errors=True)
         os.makedirs(savedir, exist_ok=True)
