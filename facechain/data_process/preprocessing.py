@@ -463,7 +463,7 @@ class Blipv2():
         fo.close()
         return out_json_name
 
-    def extract_face_info(self, imdir, imname, debug: bool = False):
+    def extract_face_info(self, imdir, imname, debug: bool = False) -> Image.Image:
         """
         从给定图片中获取脸部（加头发），以及根据脸部反推的 tag(caption)
         Input:
@@ -541,17 +541,13 @@ class Blipv2():
             mask_head = get_mask_head(result)
             im = cv2.imread(tmp_path)
             im = im * mask_head + 255 * (1 - mask_head)
-            if debug:
-                print("人体解析后最终结果：")
-                imgcat(cv2.cvtColor(im, cv2.COLOR_BGR2RGB))
-
             cv2.imwrite(tmp_path, im)
 
             if debug:
                 print("人体解析后最终结果：")
                 imgcat(Image.open(tmp_path))
 
-            return
+            return Image.open(tmp_path)
         except Exception as e:
             print('cathed for image process of ' + imname)
             print(f'Error: {e}')
