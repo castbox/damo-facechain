@@ -27,7 +27,7 @@ class TestInference(unittest.TestCase):
             result = image_face_fusion(dict(template=template, user=user_path))
             output = cv2.cvtColor(result[OutputKeys.OUTPUT_IMG], cv2.COLOR_BGR2RGB)
             imgcat(output)
-            template = numpy.copy(output)
+            template = Image.fromarray(output)
 
         imgcat(cv2.cvtColor(result[OutputKeys.OUTPUT_IMG], cv2.COLOR_BGR2RGB))
         print('finished!')
