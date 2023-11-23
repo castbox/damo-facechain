@@ -336,7 +336,7 @@ class Blipv2():
         #                                                 'damo/cv_manual_facial-landmark-confidence_flcm', model_revision='v2.5')
 
     def __call__(self, imdir, debug: bool=False):
-        # self.model.start()
+        self.model.start()
         savedir = str(imdir) + '_labeled'
         shutil.rmtree(savedir, ignore_errors=True)
         os.makedirs(savedir, exist_ok=True)
@@ -475,7 +475,6 @@ class Blipv2():
             * 脸部图反推的 tag，为字符串形式，多个 tag 之间用半角逗号分隔
 
         """
-        self.model.start()
         savedir = str(imdir) + '_labeled'
         shutil.rmtree(savedir, ignore_errors=True)
         os.makedirs(savedir, exist_ok=True)
