@@ -539,10 +539,10 @@ class Blipv2():
             # 调用多人人体解析模型 https://modelscope.cn/models/damo/cv_resnet101_image-multiple-human-parsing
             result = self.segmentation_pipeline(tmp_path)
             mask_head = get_mask_head(result)
+            im = cv2.imread(tmp_path)
             if debug:
                 print("人体解析后最终结果：")
-                imgcat(mask_head)
-            im = cv2.imread(tmp_path)
+                imgcat(im)
 
             im = im * mask_head + 255 * (1 - mask_head)
 
