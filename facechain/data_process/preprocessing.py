@@ -540,14 +540,10 @@ class Blipv2():
             result = self.segmentation_pipeline(tmp_path)
             mask_head = get_mask_head(result)
             im = cv2.imread(tmp_path)
-            if debug:
-                print("人体解析后最终结果：")
-                imgcat(im)
-
             im = im * mask_head + 255 * (1 - mask_head)
             if debug:
                 print("人体解析后最终结果：")
-                imgcat(im)
+                imgcat(cv2.cvtColor(im, cv2.COLOR_BGR2RGB))
 
             cv2.imwrite(tmp_path, im)
 
