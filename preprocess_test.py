@@ -1,6 +1,7 @@
 import unittest
 
 import cv2
+from PIL import Image
 from imgcat import imgcat
 from modelscope import pipeline, Tasks
 from modelscope.outputs import OutputKeys
@@ -18,13 +19,13 @@ class TestInference(unittest.TestCase):
 
         image_face_fusion = pipeline(Tasks.image_face_fusion,
                                      model='damo/cv_unet-image-face-fusion_damo')
-        template_path = 'assets/theme-images/black_man_fused.png'
+        template = Image.open('assets/theme-images/black_man_fused.png')
         user_path = result
 
         for i in range(3):
-            result = image_face_fusion(dict(template=template_path, user=user_path))
+            result = image_face_fusion(dict(template=template, user=user_path))
             imgcat(cv2.cvtColor(result[OutputKeys.OUTPUT_IMG], cv2.COLOR_BGR2RGB))
-            template_path = result
+            template = result[OutputKeys.OUTPUT_IMG]
 
         imgcat(cv2.cvtColor(result[OutputKeys.OUTPUT_IMG], cv2.COLOR_BGR2RGB))
         print('finished!')
